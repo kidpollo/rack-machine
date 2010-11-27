@@ -1,0 +1,10 @@
+config/*.json
+Onafile
+config/*_dna.rb
+.rvmrc
+.bundle
+.swp
+.swo
+.*.swp
+.*.swo
+tmp/json/*.json

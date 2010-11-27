@@ -1,0 +1,191 @@
+@dna = {
+
+  # ============================================================================
+  # GENERAL DEPLOYMENT SETTINGS
+  # ============================================================================
+  :user                 => 'deploy',
+  :backup_interval      => 24,
+  :backup_window        => 2,
+  :db_pass              => 'something_super_random_and_encrypted',
+  :environment          => { :framework_env => 'production' },
+
+  # ============================================================================
+  # CUSTOM SETTINGS
+  #
+  # TODO: We might need to define different settings per app.
+  #       But I don't see any iteration on the app's *hook* files.
+  #       Those might need to be refactored.
+  #       In the mean time I'll leave this config here.
+  # ============================================================================
+  :custom_settings => {
+  },
+
+  :users => [
+    {
+      :username => 'deploy',
+      # authorized keys you want to be able to login to the server via SSH
+      :authorized_keys => [
+        'PASTE HERE YOUR PUBLIC SSH KEY'
+      ],
+      :known_hosts => [
+        # GitHub public key - for deployment with github
+        'github.com,65.74.177.129 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ=='
+      ],
+      :keys => {
+        :private => (
+<<-eos
+-----BEGIN RSA PRIVATE KEY-----
+
+HERE GOES A REALLY LONG AND ENCRYPTED PRIVATE KEY FOR
+THE DEPLOY USER
+
+-----END RSA PRIVATE KEY-----
+eos
+),
+        :public  => 'PASTE HERE THE PUBLIC KEY FOR THE PRIVATE KEY ABOVE'
+      },
+      :gid => 1000,
+      :uid => 1000,
+      :sudo => true,
+      
+      # ============================================================================
+      # Optional custom configurations for user go here
+      # ============================================================================
+      
+      #:shell => '/bin/zsh',
+      #:custom_files  => [{
+      #  :name => '.zshrc',
+      #  :content => File.read(File.join(File.dirname(__FILE__), 'custom/zshrc'))
+      #}]
+    },
+  ],
+
+  # ============================================================================
+  # APTITUDE PACKAGES TO PRE-INSTALL
+  # ============================================================================
+  :packages => {
+    :all => [
+      'zsh',
+      'zsh-doc',
+      'vim'
+    ],
+    :solo => [
+      'libxml2',              # for nokogiri, feedzirra
+      'libxml2-dev',          # for nokogiri, feedzirra
+      'libxslt1-dev',         # for nokogiri, feedzirra
+      'postfix',              # postfix and mailer magic
+      'mailutils'             # postfix and mailer magic
+    ]
+  },
+
+  # ============================================================================
+  # MySQL options
+  # ============================================================================
+  # all of these are optional
+  :mysql_options => {
+    :innodb_buffer_pool_size => '100M',
+    :max_connections => '300',
+    :query_cache_limit => '1M',
+    :query_cache_size => '16M',
+    :table_cache => '1024'
+  },
+
+  # ===========================================================================
+  # GEMS TO PRE-INSTALL
+  # ============================================================================
+  :gems => {
+    :solo => [     
+      'rake',
+      'unicorn',
+      { :name => 'bundler', :version => '>= 1.0.0' },
+    ]
+  },
+
+  # ============================================================================
+  # DEPLOYMENT NOTIFICATION RECIPIENTS
+  # ============================================================================
+  :deployment => {
+    :active => true,
+    :recipients => [
+      'user@domain.com'
+    ]
+  },
+
+  # ============================================================================
+  # MONIT CONFIG
+  # ============================================================================
+  # all are optional
+  :monit => {
+    :run_every => 300,
+    :recipients => [
+      'paco@freshout.us'
+    ],
+    :http_user => 'monit_user',
+    :http_pass => 'monit_secret_password',
+    :small_load_avg_time  => '1min',
+    :big_load_avg_time    => '5min',
+    :small_load_avg_level => 4,
+    :big_load_avg_level   => 2,
+    :general_memory_usage => '75%',
+    :cpu_usage_user       => '70%',
+    :cpu_usage_system     => '30%',
+    :cpu_usage_wait       => '30%' 
+  },
+
+  # ============================================================================
+  # CONFIGURATION FOR APPLICATIONS
+  # ============================================================================
+  :applications => [
+    {
+      :app_server                        => { :type => 'unicorn', :workers => 3 },
+      :name                              => 'rack_machine_sample_app', # do not use -
+      # If false this will use unicorn instead of unicorn_rails.
+      # Note: (use true in rails =< '3.0')
+      :rails_app                         => false,
+      :bundler                           => true,
+      :mysql                             => true,
+      :mongodb                           => false,
+      :memcached                         => true,
+      :server_names                      => ['rack-machine-sample-app.com'],
+      :user                              => 'deploy',
+      :group                             => 'deploy',
+      :password                          => 'something_super_random_and_encrypted',
+      :repo                              => 'git@github.com:freshout-dev/rack-machine-sample-app.git',
+      :revision                          => 'HEAD', # can by any branch you want
+      :migrate                           => true,
+      :migration_command                 => 'rake db:migrate --trace',
+      :action                            => :deploy, # use :deploy or :rollback
+      :create_dirs_before_symlink        => ['tmp'],
+      :symlink_before_migrate            => {},
+      :symlinks                          => { 'log' => 'log', 'tmp/pids' => 'tmp/pids' },
+      :purge_before_symlink              => %w{ log tmp/pids },
+      :ssl                               => [],
+      # application's deployment-version settings
+      :generate_version             => true
+      # optional
+      # :custom_nginx_conf                 => 'large_client_header_buffers  8 8k;'
+    }
+  ],
+
+  # ============================================================================
+  # RECIPES TO USE FOR THIS DEPLOYMENT
+  # ============================================================================
+  :recipes => [
+    'packages',
+    'users',
+    'sudo',
+    'openssh',
+    'apparmor',
+    'mysql',
+    'git',
+    'logrotate',
+    'nginx',
+    'memcached',
+    'cron',
+    'gems',
+    'iptables',
+    'rack_apps',
+    'monit'
+  ]
+
+}

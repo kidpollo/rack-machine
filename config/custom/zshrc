@@ -1,0 +1,56 @@
+# ==============
+# = Hells Yeah =
+# ==============
+
+# Unix Rainbows
+autoload -U compinit colors
+compinit
+colors
+
+# History
+HISTFILE=$HOME/.zsh_history
+HISTSIZE=5000
+SAVEHIST=1000
+setopt append_history
+setopt inc_append_history
+setopt share_history
+setopt extended_history
+setopt hist_ignore_all_dups
+setopt hist_ignore_space
+
+# This is how i roll
+export TZ="America/San_Francisco"
+export HOSTNAME="`hostname`"
+export PAGER="less"
+export EDITOR="vim"
+
+# Make it purr
+setopt autocd
+setopt extendedglob
+setopt correctall
+
+zstyle ':completion:*:*:kill:*' menu yes select
+
+# Prompt goodies
+parse_git_branch() {
+  git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+}
+
+# setopt prompt_subst
+# PROMPT='%{${fg[blue]}%}%c%{${fg[red]}%}$(parse_git_branch)%{${fg[green]}%} %%%{${fg[default]}%} '
+
+autoload -U promptinit
+promptinit
+prompt walters
+
+# case-insensitive,partial-word and then substring completion
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+
+alias ls='ls -G'
+
+function psx {
+  ps Axwwo ppid,pid,command | grep $*
+}
+
+# Figure a way to set this properly.
+export BILLING_SECURE_DOMAIN=empowerkit.com

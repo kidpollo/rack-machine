@@ -1,0 +1,5 @@
+#!/bin/bash
+#
+<% @monit[:recipients].each do |recipient| %>
+`/usr/sbin/monit status | /usr/bin/mail -s 'monitor status' <%= recipient %>`
+<% end %>

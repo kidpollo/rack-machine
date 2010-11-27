@@ -1,0 +1,40 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    activesupport (3.0.0)
+    deploy_version (0.2.0)
+    diff-lcs (1.1.2)
+    eventmachine (0.12.10)
+    json (1.4.6)
+    net-sftp (2.0.5)
+      net-ssh (>= 2.0.9)
+    net-ssh (2.0.23)
+    ona (0.1.26)
+    rcov (0.9.9)
+    rspec (2.0.0.rc)
+      rspec-core (= 2.0.0.rc)
+      rspec-expectations (= 2.0.0.rc)
+      rspec-mocks (= 2.0.0.rc)
+    rspec-core (2.0.0.rc)
+    rspec-expectations (2.0.0.rc)
+      diff-lcs (>= 1.1.2)
+    rspec-mocks (2.0.0.rc)
+      rspec-core (= 2.0.0.rc)
+      rspec-expectations (= 2.0.0.rc)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  activesupport
+  deploy_version
+  eventmachine (= 0.12.10)
+  json
+  net-sftp
+  net-ssh
+  ona
+  rcov
+  rspec (>= 2.0.0.beta.20)
+  rspec-core (>= 2.0.0.beta.20)
+  rspec-expectations (>= 2.0.0.beta.20)
+  rspec-mocks (>= 2.0.0.beta.20)

@@ -1,0 +1,299 @@
+= Rack Machine
+
+Rack machine is an opinionated automatic provisioning and Rack application deployment framework 
+that was created by the awesome crew at Freshout[http://freshout.us]. 
+For more information check out the slides[https://docs.google.com/viewer?url=http://dl.dropbox.com/u/6946662/magmaslides/Chef.pdf]
+
+Rack machine is a basically a set of Chef[http://wiki.opscode.com/display/chef/Home] cookbooks and one or more ways to automatize the process
+of setting up your server keys, bootstrapping your server instances, provisioning the server
+or cluster of servers and deploying your favorite Rack application.
+Rack machine follows the following conventions:
+
+- Works on Ubuntu 10.04 Server LTS its not tested on other Linux distros but it might, patches accepted.
+- Works better on bare bones server instances that only have SSL server installed.
+- Requires root acces to the server instances (sudo passwd root). Most base Ubuntu 10.04 virtual server instances already have root password set.
+- Provisions and deploys the application with Chef solo on every run (dont worry its not slow).
+- Your app can have its custom deploy hooks via Chef Deploy Resource via deploy/callback_name.rb[http://wiki.opscode.com/display/chef/Deploy+Resource]
+- Uses Unicorn as application server (Thin support is not tested).
+- At the moment it only supports 3 server roles: solo, app_master, db_master for clustered infrastructures. (app_slave and Haproxy support soon!)
+
+= REQUIREMENTS:
+
+- Bundler.
+- One or more virtual machines or physical servers to play with or to deploy your awesome app to.
+- RVM (optional).
+- Chef Solo knowledge will help a lot but is not required.
+
+= INSTALL:
+
+Get the code
+    git clone git://github.com/kidpollo/rack-machine.git
+    cd rack-machine
+If you chose to use RVM then you are wise!
+    echo 'rvm ruby-1.8.7@rack-machine' > .rvmrc
+    rvm reload
+Install dependencies
+    gem install bundler
+    bundle install
+    
+= COMMAND LINE USAGE (using Ona Gem) AND SAMPLE SINGLE SERVER DEPLOY:
+
+We created a small terminal application to simplify the deployment process called Ona. Ona should have been installed when you ran bundler. 
+
+The stems might look like much but after the first time you do this you'll be able to deploy applications in minutes.
+
+== Steps
+- Fork the sample rack machine rails app we are going to deploy in this example. https://github.com/freshout-dev/rack-machine-sample-app/admin
+- Prepare a vanilla or bare bones Ubuntu 10.04 Server instance with root acces via SSH.
+- CD into your rack-machine copy.
+- Create your own Onafile. Ona file contains the basic information to login into the server. The ona file contains very sensitive information so dont check it into source control.
+    cp Onafile.sample Onafile
+- Edit the Onafile's first entry to match your server description, ip, root password and dna name (in this case use :sample for dna).
+    stack.append do |c|
+      c.desc = 'Sample Rack Machine'
+      c.dna  = :sample
+      c.ip   = '192.168.1.67'
+      c.pass = 'rackmachinerulez'
+      c.role = :solo
+    end
+- You can add as many stack.append blocks as you like.
+- Now that you have your Onafile ready is time to create a dna for your sample deploy.
+    cp config/sample_dna.rb.sample config/sample_dna.rb
+- Open the config/sample_dna.rb file in your favorite editor. Notice that all dna files end in _dna.rb. Please dont check this files into source control also.
+- Read the file carefully and check all the configuration options you have both for the server and your rack app. Dont change the options for now.
+- Copy your public key so you are able to login to the server instance via ssh.
+    cat ~/.ssh/id_rsa.pub | pbcopy
+- Paste your public ssh key in the config/sample_dna.rb instead of the string that reads PASTE HERE YOUR PUBLIC SSH KEY
+    # authorized keys you want to be able to login to the server via SSH
+    ...
+    :authorized_keys => [
+      'PASTE HERE YOUR PUBLIC SSH KEY'
+    ],
+    ...
+- Create a private and public key for the deploy user your server instance will be using to run the app (no passphrase).
+    ~ ssh-keygen
+    Generating public/private rsa key pair.
+    Enter file in which to save the key (/path_to_user_dir): sample_server_key
+    Enter passphrase (empty for no passphrase): 
+    Enter same passphrase again: 
+    Your identification has been saved in sample_server_key.
+    Your public key has been saved in sample_server_key.pub.
+    The key fingerprint is:
+    f4:75:eb:cb:2c:5a:58:56:30:ea:ec:b6:65:f2:06:21 paki@PakiBookPro.local
+    The key's randomart image is:
+    +--[ RSA 2048]----+
+    |            o    |
+    |           . o   |
+    |        . . . o  |
+    |       .E+.. o . |
+    |        S.+.o .  |
+    |         ..+ .   |
+    |          =.+ .  |
+    |         . Boo . |
+    |          oo..+  |
+    +-----------------+
+- Copy the private key to your clipboard
+    cat sample_server_key | pbcopy
+- Paste it into the config/sample_dna.rb instead of
+    ...
+    -----BEGIN RSA PRIVATE KEY-----
+
+    HERE GOES A REALLY LONG AND ENCRYPTED PRIVATE KEY FOR
+    THE DEPLOY USER
+
+    -----END RSA PRIVATE KEY-----
+    ...
+- Copy the public key to your clipboard
+    cat sample_server_key.pub | pbcopy
+- Paste the public ssh key for your deploy user in the config/sample_dna.rb instead of the string that reads PASTE HERE THE PUBLIC KEY FOR THE PRIVATE KEY ABOVE:
+    ...
+    :public  => 'PASTE HERE THE PUBLIC KEY FOR THE PRIVATE KEY ABOVE'
+    ...
+- You also have to paste the public key into the deploy keys of your clone of the rack-machine-sample-app repo
+- Open your browser to https://github.com/your-user-name/rack-machine-sample-app/admin change 'your-user-name' to your github user name
+- Click on 'Deploy Keys'
+- Click on 'Add another deploy key'
+- Enter whatever name for the key and paste the key on the 'Key' text input.
+- Click on 'Add key'
+- Thats almost all the setup you'll be needing.
+- Now save your config/sample_dna.rb and go back to the terminal
+- CD into your rack machine copy and launch the Ona simple deployment terminal client.
+    code/rack-machine ~ ona
+- Type 'help' to see the commands you can execute.
+    Ona> help
+    
+          Ona -- Deployment simplified.
+    
+          deploy 1          # Deploy a specific server
+          exit              # Same as *quit*
+          help              # Show this help
+          http 1            # Open the server in default browser.
+          key 1             # Uploads my public ssh-key to remote server (root)
+          keys              # Uploads my public ssh-key to all servers (root)
+          ls                # Short list for available servers
+          quit              # Termintes the ona shell.
+          rake              # Shows rake tasks.
+          setup 1           # Upload ssh-keys and bootstrap server
+          show 1            # Detailed info for a specific server
+          ssh 1             # Open a ssh session as *deploy* on remote server (new window)
+          ssh# 1            # Open a ssh session as *root* to a remote server (new window)
+    
+          --
+    
+          Note: 1 is a server id, you can use many ids!
+    
+          show 1 2 3        # Will display info for three servers.
+- Type 'ls' to list your available servers (only one for now)
+    Ona> ls
+    1    Sample Rack Machine
+- Type 'show 1' to see the details of the first server on the list.
+    Ona> show 1
+
+      1 - Sample Rack Machine
+
+          Id           1
+          Ip           192.168.1.67
+          Dna          sample
+          Role         solo
+          Password     rackmachinerulez
+- Ok now, the first step to prepare your server is to setup the ssh keys so you have root acces to your server with your ssh key. Rack Machine does this for you, it assumes your ssh he is in '' if not you have to manually add your key to the root user 'authorzed_keys' file.
+- Type 'key 1' 1 is for the server instance number you see before your server name. Only run this once per server instance.
+      Ona> key 1
+      Setting up key for root
+      (in /Users/paki/code/rack-machine)
+
+      ** Installing ssh keys on remote server.
+      ********************************************************************************
+      - Dependency: SSH folder exists [no]
+      - Created .ssh folder
+      - Created ~/.ssh/authorized_keys
+      - Added key to file [yes]
+- Now its time to bootstrap the server. Bootstrapping will install basic packages and gems needed for the deployment to work. 
+- Type 'setup 1' and confirm command by typing the word 'yes' when prompted. Only run once per server instance.
+      Ona> setup 1
+      Setting up key for root
+      (in /Users/paki/code/rack-machine)
+
+      ** Installing ssh keys on remote server.
+      ********************************************************************************
+      - Dependency: SSH folder exists [yes]
+      - Dependency: authorized_keys exists [yes]
+      - Added key to file [yes]
+
+        1 - Sample Rack Machine
+
+            Id           1
+            Ip           192.168.1.67
+            Dna          sample
+            Role         solo
+            Password     rackmachinerulez
+
+
+      Type [yes] to continue. or anything else to skip.
+      What to do? >yes
+      (in /Users/paki/code/rack-machine)
+
+      ** Server setup.
+      ********************************************************************************
+      ...
+      (Redacted Pretty debug output)
+      ...
+      ** It seems to have worked!
+      ********************************************************************************
+      
+- Wait for the setup to finish and finally deploy your app.
+- Type 'deploy 1' and confirm command by typing the word 'yes' when prompted. Run this command all the times you want to deploy a code change on your application.
+      Ona> deploy 1
+
+        1 - Sample Rack Machine
+
+            Id           1
+            Ip           192.168.1.67
+            Dna          sample
+            Role         solo
+            Password     rackmachinerulez
+
+
+      Type [yes] to continue. or anything else to skip.
+      What to do? >yes
+      (in /Users/paki/code/rack-machine)
+
+      ** Checking deployment lock
+      ********************************************************************************
+
+      ** Uploading your cookbooks.
+      ********************************************************************************
+      rsync -rlP --delete --exclude '.*' /Users/paki/code/rack-machine/ root@192.168.1.67:/etc/chef
+      ...
+      (Redacted Pretty debug output)
+      ...
+      DEBUG: Exiting
+
+      ** Setting up version file.
+      ********************************************************************************
+      Done!
+
+      ** Sending notifications. 
+      ********************************************************************************
+      ["user@domain.com"]
+      Done!
+- Your app is now deployed!
+- Go into your application by typing 'http 1' on the Ona console. A browser window will open on the url for your app, NEAT! (Only works on OSX)
+      Ona> http 1
+- You can also ssh into your server instance
+      Ona> ssh 1
+- Or ssh into your instance as root
+      Ona> ssh# 1
+- Tyope quit to exit!
+      Ona> quit
+
+Once you have mastered this steps you will be able to deploy and automatically provision and maintain large infrastructures in no time!
+
+== Notes
+- If a deploy fails you have to manually delete the deploy lock file in the server to be able to deploy again.
+      rm /tmp/deployment_lock.txt
+
+= MANUAL USAGE (through rake tasks)
+
+== INSTALLING AN SSH-KEY ON THE REMOTE SERVER:
+
+    rake upload_ssh_key server=USER@REMOTE_SERVER_IP pass=MY_PASSWORD key=~/.ssh/id_rsa.pub
+
+== BOOTSTRAPPING REMOTE SERVER:
+
+This will install ruby, mysql and other required libraries like postfix, or memcached
+depending on your @dna configuration stored in the *config* dir.
+
+    rake bootstrap server=USER@REMOTE_SERVER_IP
+
+== DEPLOYING TO REMOTE SERVER:
+
+    rake cook server=USER@REMOTE_SERVER_IP dna=DNA_FILE instance_role=MY_ROLE_HERE
+
+== NOTES:
+
+Below I am demonstrating a series of commands. These have a set of
+parameters which values you should replace with the corresponding data
+for your app.
+
+Here is a brief reference of the parameters and what they mean.
+
+  # USER - ssh user that executes chef, normaly "root".
+  # REMOTE_SERVER_IP - ip of the server that needs to be deployed
+  # MY_PASSWORD - the ssh password for the remote shell
+  # DNA_FILE - A config file that tells how a specific server should
+    be deployed (see config dir)
+  # MY_ROLE_HERE - The role that this server should have this should
+    be ither one of the following. (solo, app_master, db_master)
+
+    - solo: will install db, and app all in the same vm-machine.
+    - app_master: Will install only the app on remote host, whithout db.
+    - db_master: Will install only the db on remote host, whitout app.
+
+= CREDITS:
+- Thanks to Freshout for letting us work on this and make it an open source project.
+- Thanks to Kazu on all his work on Rack Machine and the awesome Ona ona https://github.com/ktlacaelel/ona 
+- Based and inspired by co http://probablyinteractive.com/2009/3/29/Amazon%20EC2%20+%20Chef%20=%20Mmmmm.html.
+- Also inspired by some structure by http://github.com/grempe/chef-solo-bootstrap
+- Based also on the way engineyard does their thing http://www.engineyard.com/products/cloud
+

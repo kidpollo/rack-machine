@@ -1,0 +1,14 @@
+<%= @logs_dir %> {
+  copytruncate
+  daily
+  missingok
+  compress
+  rotate 30
+  dateext
+  notifempty
+  sharedscripts
+  extension gz
+  postrotate
+    date > /tmp/<%= @app_name %>.log_rotation.log
+  endscript
+}

@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+# Line above is for highlighting.
+
+stack.append do |c|
+  c.desc = 'Sample Rack Machine'
+  c.dna  = :sample
+  c.ip   = 'X.X.X.X'
+  c.pass = 'some random root pass'
+  c.role = :solo
+end

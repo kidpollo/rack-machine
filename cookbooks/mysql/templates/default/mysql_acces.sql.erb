@@ -1,0 +1,12 @@
+<% if @node[:app_hosts] %>
+  <% for host in @node[:app_hosts] %>
+GRANT ALL ON *.* TO 'root'@'<%= host %>' IDENTIFIED BY '<%= @node[:db_pass] %>' WITH GRANT OPTION;
+  <% end %>
+<% else %>
+GRANT ALL ON *.* TO 'root'@'localhost' IDENTIFIED BY '<%= @node[:db_pass] %>' WITH GRANT OPTION;
+<% end %>
+
+
+FLUSH PRIVILEGES;
+
+

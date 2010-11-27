@@ -1,0 +1,25 @@
+create database IF NOT EXISTS <%= @database %>;
+
+<% if @node[:app_hosts] %>
+  <% for host in @node[:app_hosts] %>
+      GRANT ALL PRIVILEGES 
+      ON <%= @database %>.*
+      TO <%= @user %>@'<%= host %>'
+      <% if @password %>
+      IDENTIFIED BY '<%= @password %>';
+      <% else %>
+      ;
+      <% end %>
+  <% end %>
+<% else %>
+  GRANT ALL PRIVILEGES 
+  ON <%= @database %>.*
+  TO <%= @user %>@'localhost'
+  <% if @password %>
+  IDENTIFIED BY '<%= @password %>';
+  <% else %>
+  ;
+  <% end %>
+<% end %>
+
+FLUSH PRIVILEGES;
