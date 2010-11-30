@@ -26,7 +26,7 @@ Rack machine follows the following conventions:
 
 = INSTALL:
 
-Get the code
+Get the code (you can also fork it if you wish to contribute)
     git clone git://github.com/kidpollo/rack-machine.git
     cd rack-machine
 If you chose to use RVM then you are wise!
@@ -240,9 +240,9 @@ The stems might look like much but after the first time you do this you'll be ab
 - Your app is now deployed!
 - Go into your application by typing 'http 1' on the Ona console. A browser window will open on the url for your app, NEAT! (Only works on OSX)
       Ona> http 1
-- You can also ssh into your server instance
+- You can also ssh into your server instance (Only works on OSX)
       Ona> ssh 1
-- Or ssh into your instance as root
+- Or ssh into your instance as root (Only works on OSX)
       Ona> ssh# 1
 - Tyope quit to exit!
       Ona> quit
