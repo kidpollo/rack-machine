@@ -1,41 +1,45 @@
+
+require 'rubygems'
+require 'net/ssh'
+require 'fileutils'
+require 'net/sftp'
+
 # Simple remote notificator
 #
-# require 'rubygems'
-# require 'net/ssh'
 # require 'version/remote_notificator'
 #
 # recipients = ['kazu.freshout.us', 'kazu@freshout.us']
 # repo = 'git@github.com:freshout-dev/breeze.git'
 #
-# RemoteNotificator.new('root@173.203.95.124', 'empowerkit', recipients, repo).run!
+# RemoteNotificator.new('root@192.168.2.33', 'empowerkit', recipients, repo, 'ek_dev').run!
 #
 class RemoteNotificator
 
-  def initialize(server, project, recipients, repo)
+  attr_accessor :local_file
+
+  def initialize(server, project, recipients, repo, env)
     @server, @project, @recipients = server, project, recipients
-    @repo = repo
+    @repo, @env = repo, env
+    @local_file = '/tmp/remote_commands.sh'
     @user, @host = @server.split('@')
   end
 
   def run!
-    @recipients.each do |recipient|
-      @recipient = recipient
-      commands.each do |command|
-        Net::SSH.start(@host, @user) do |ssh|
-          ssh.exec!(command) { |ch, stream, data| }
-        end
-      end
+    File.open(local_file, 'w+') {}
+    File.open(local_file, 'a+') do |file|
+      file.puts reset_file_command
+      file.puts prepare_version_command
+      file.puts prepare_space_command
+      file.puts prepare_commit_messages_command
+      @recipients.each { |email| file.puts notification_command(email) }
     end
-  end
-
-  def commands
-    [
-      reset_file_command,
-      prepare_version_command,
-      prepare_space_command,
-      prepare_commit_messages_command,
-      notification_command
-    ]
+    Net::SFTP.start(@host, @user) do |sftp|
+      sftp.upload!(local_file, '/tmp/notify.sh')
+    end
+    Net::SSH.start(@host, @user) do |ssh|
+      command = 'chmod +x /tmp/notify.sh && /tmp/notify.sh'
+      ssh.exec!(command) { |ch, stream, data| }
+    end
   end
 
   # ============================================================================
@@ -52,12 +56,11 @@ class RemoteNotificator
 
   def prepare_commit_messages_command
     "cd #{rails_root} && git log --pretty --format=\"%s%n  - " +
-    "(#{resolve_github_path}%h)%n  - %an%n\" -n50  | " +
-    "grep -v Merge >> #{notification_file}"
+    "(#{resolve_github_path}%h)%n  - %an%n\" -n50  >> #{notification_file}"
   end
 
-  def notification_command
-    "cat #{notification_file} | mail -s '[DEPLOY] #{@project} deployed.' #{@recipient} " +
+  def notification_command recipient
+    "cat #{notification_file} | mail -s '[DEPLOYED] #{@project} #{@env}.' #{recipient} " +
     "-H 'From: deploy@#{@host};'"
   end
 

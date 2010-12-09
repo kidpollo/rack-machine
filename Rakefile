@@ -24,6 +24,7 @@ Usage:
 
 Output:
 
+  (in /Users/kazu/dev/git/rack-machine)
     -  mkdir -p cookbooks/my_cookname/templates
     -  mkdir -p cookbooks/my_cookname/recipes
     -  mkdir -p cookbooks/my_cookname/attributes
@@ -200,7 +201,9 @@ end
 def setup_remote_version_file project, revision
   check_server_and_dna_variables
   banner 'Setting up version file.'
-  SetupRemoteVersion.new(server, "/data/#{project}/current", revision).install!
+  path = "/data/#{project}/current"
+  env  = @dna[:environment][:framework_env]
+  SetupRemoteVersion.new(server, path, revision, env).install!
   done
 end
 
@@ -213,7 +216,8 @@ def send_deployed_notification project, repo
   return unless @dna[:deployment][:active]
   banner 'Sending notifications. '
   puts recipients.inspect
-  RemoteNotificator.new(server, project, recipients, repo).run!
+  env  = @dna[:environment][:framework_env]
+  RemoteNotificator.new(server, project, recipients, repo, env).run!
   done
 end
 
